@@ -36,6 +36,7 @@ void init_context(t_traceroute_context *ctx) {
 	ctx->flags = 0;
 	ctx->socket_fd = init_socket(ctx);
 	ft_strcpy(ctx->src, "0.0.0.0");
+	ctx->host = NULL;
 }
 
 void print_options() {
@@ -55,9 +56,9 @@ void print_options() {
 					"\t\t\tseconds (float point values allowed too)\n");
 	fprintf(stderr, "\nArguments:\n");
 	fprintf(stderr, "+\thost\t\tThe host to traceroute to\n");
-	fprintf(stderr, "\tpacketlen\tThe full packet length (default is the length of an IP\n"
-					"\t\t\theader plus 40). Can be ignored or increased to a minimal\n"
-					"\t\t\tallowed value\n");
+	// fprintf(stderr, "\tpacketlen\tThe full packet length (default is the length of an IP\n"
+	// 				"\t\t\theader plus 40). Can be ignored or increased to a minimal\n"
+	// 				"\t\t\tallowed value\n");
 }
 
 void print_usage(const char *executable) {
@@ -66,13 +67,149 @@ void print_usage(const char *executable) {
 	exit(0);
 }
 
-void process_arguments(int argc, char *argv[], t_traceroute_context *ctx) {
-	(void)ctx;
-	(void)argc;
-	(void)argv;
+int host_to_ip(const char *host, char *dest) {
+	struct addrinfo *addr;
+	struct addrinfo hints;
+
+	ft_memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_INET;
+	int ret = getaddrinfo(host, NULL, &hints, &addr);
+	if (ret) {
+		fprintf(stderr, "%s: %s\n", host, ft_gai_strerror(ret));
+		return 1;
+	}
+
+	ft_strcpy(dest, inet_ntoa(((struct sockaddr_in *)addr->ai_addr)->sin_addr));
+	freeaddrinfo(addr);
+	return 0;
 }
 
-void start(t_traceroute_context *ctx) {}
+int process_options(char c, t_traceroute_context *ctx, char *argv[], int *x, int *y) {
+	int i = *x;
+	int j = *y;
+	long value = 0;
+	char *str = NULL;
+	char *end = NULL;
+
+	if (argv[i][j + 1] != '\0') {
+		str = argv[i] + j + 1;
+	} else {
+		if (argv[i + 1] == NULL) {
+			fprintf(stderr, "Option `-%c' (argc %d) requires an argument: `-%c %s'\n", c, i, c, "TODO");
+			close(ctx->socket_fd);
+			exit(2);
+		}
+		str = argv[i + 1];
+		i++;
+	}
+	if (c == 's') {
+		char ip[INET_ADDRSTRLEN];
+		if (host_to_ip(str, ip)) {
+			fprintf(stderr, "Cannot handle `-s' option with arg `%s' (argc %d)\n", str, i);
+			close(ctx->socket_fd);
+			exit(2);
+		}
+		ft_strcpy(ctx->src, ip);
+		return 1;
+	}
+	value = ft_strtol(str, &end);
+	if (end != NULL && *end != '\0') {
+		fprintf(stderr, "Cannot handle `-%c' option with arg `%s' (argc %d)\n", c, str, i);
+		close(ctx->socket_fd);
+		exit(2);
+	}
+	if (c == 'f') {
+		if (value < 1 || value > 30) {
+			fprintf(stderr, "first hop out of range\n");
+			close(ctx->socket_fd);
+			exit(2);
+		}
+		ctx->first_ttl = (int8_t)value;
+	} else if (c == 'm') {
+		if (value < 0 || value > 255) {
+			fprintf(stderr, "max hops cannot be more than 255\n");
+			close(ctx->socket_fd);
+			exit(2);
+		}
+		ctx->max_ttl = (int8_t)value;
+	} else if (c == 'w') {
+		if (value < 0) {
+			fprintf(stderr, "bad wait specifications `%ld' used\n", value);
+			close(ctx->socket_fd);
+			exit(2);
+		}
+		ctx->wait = (int)value;
+	} else if (c == 'q') {
+		if (value < 1 || value > 10) {
+			fprintf(stderr, "no more than 10 probes per hop\n");
+			close(ctx->socket_fd);
+			exit(2);
+		}
+		ctx->nqueries = (int)value;
+	} else if (c == 'z') {
+		if (value < 0) {
+			fprintf(stderr, "bad sendtime `%lf' specified\n", (double)value);
+			close(ctx->socket_fd);
+			exit(2);
+		}
+		ctx->sendwait = (double)value;
+	}
+	*x = i;
+	*y = j;
+	return 1;
+}
+
+void process_arguments(int argc, char *argv[], t_traceroute_context *ctx) {
+	int end_of_flags = 0;
+	int failed = 0;
+	int host_idx = 0;
+
+	for (int i = 1; i < argc; ++i) {
+		if (!end_of_flags && argv[i][0] == '-') {
+			if (argv[i][1] == '-' && argv[i][2] == '\0') {
+				end_of_flags = 1;
+			} else if (argv[i][1] == '-' && argv[i][2] != '\0') {
+				fprintf(stderr, "Bad option `%s' (argc %d)\n", argv[i], i);
+				failed = 1;
+			} else {
+				for (int j = 1; argv[i][j] != '\0'; ++j) {
+					if (search_char("dn", argv[i][j])) {
+						ctx->flags |= (argv[i][j] == 'd') ? FLAG_DEBUG : FLAG_NUM;
+					} else if (search_char("fmwqsz", argv[i][j])) {
+						if (process_options(argv[i][j], ctx, argv, &i, &j)) {
+							break;
+						}
+					} else if (argv[i][j] == 'h') {
+						print_usage(argv[0]);
+					} else {
+						fprintf(stderr, "Bad option `-%c' (argc %d)\n", argv[i][j], i);
+						failed = 1;
+					}
+				}
+			}
+		} else {
+			ctx->host = argv[i];
+			host_idx = i;
+		}
+	}
+	if (ctx->host == NULL) {
+		fprintf(stderr, "Specify \"host\" missing argument.\n");
+		failed = 1;
+	}
+	if (host_to_ip(ctx->host, ctx->ip)) {
+		fprintf(stderr, "Cannot handle \"host\" cmdline arg `%s' on position 1 (argc %d)\n", ctx->host, host_idx);
+		failed = 1;
+	}
+	if (failed) {
+		close(ctx->socket_fd);
+		exit(2);
+	}
+}
+
+void start(t_traceroute_context *ctx) {
+
+	printf("traceroute to %s (%s), 30 hops max, 60 byte packets\n", ctx->host, ctx->ip);
+}
 
 int main(int argc, char *argv[]) {
 	if (argc < 2) {

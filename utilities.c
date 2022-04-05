@@ -11,6 +11,14 @@ char *ft_strcpy(char *dst, const char *src) {
 	return dst;
 }
 
+void *ft_memset(void *s, int c, size_t n) {
+	char *data = s;
+	for (size_t i = 0; i < n; i++) {
+		data[i] = c;
+	}
+	return s;
+}
+
 int search_char(const char *s, char c) {
 	if (s == NULL) {
 		return 0;
@@ -357,6 +365,32 @@ const char *ft_strerror(int errcode) {
 		return "Operation not possible due to RF-kill";
 	} else if (errcode == 133) {
 		return "Memory page has hardware error";
+	} else {
+		return "Unknown error";
+	}
+}
+
+const char *ft_gai_strerror(int errcode) {
+	if (errcode == EAI_BADFLAGS) {
+		return "Bad value for ai_flags";
+	} else if (errcode == EAI_NONAME) {
+		return "Name or service not known";
+	} else if (errcode == EAI_AGAIN) {
+		return "Temporary failure in name resolution";
+	} else if (errcode == EAI_FAIL) {
+		return "Non-recoverable failure in name resolution";
+	} else if (errcode == EAI_FAMILY) {
+		return "ai_family not supported";
+	} else if (errcode == EAI_SOCKTYPE) {
+		return "ai_socktype not supported";
+	} else if (errcode == EAI_SERVICE) {
+		return "Servname not supported for ai_socktype";
+	} else if (errcode == EAI_MEMORY) {
+		return "Memory allocation failure";
+	} else if (errcode == EAI_SYSTEM) {
+		return "System error";
+	} else if (errcode == EAI_OVERFLOW) {
+		return "Argument buffer overflow";
 	} else {
 		return "Unknown error";
 	}
