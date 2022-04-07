@@ -16,5 +16,7 @@ long ft_strtol(const char *nptr, char **endptr);
 int is_ip(const char *host);
 const char *ft_strerror(int errcode);
 const char *ft_gai_strerror(int errcode);
+unsigned short ft_checksum(unsigned short *addr, int len);
+int dns_resolve(const char *host, char *dest, int size);
 
 #endif

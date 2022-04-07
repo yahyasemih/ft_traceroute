@@ -395,3 +395,30 @@ const char *ft_gai_strerror(int errcode) {
 		return "Unknown error";
 	}
 }
+
+unsigned short ft_checksum(unsigned short *addr, int len) {
+	int nleft = len;
+	int sum = 0;
+	unsigned short *w = addr;
+	unsigned short answer = 0;
+
+	while (nleft > 1) {
+		sum += *w++;
+		nleft -= 2;
+	}
+	if (nleft == 1) {
+		*(unsigned char *)(&answer) = *(unsigned char *)w;
+		sum += answer;
+	}
+	sum = (sum >> 16) + (sum & 0xffff);
+	sum += (sum >> 16);
+	answer = ~sum;
+	return (answer);
+}
+
+int dns_resolve(const char *host, char *dest, int size) {
+   struct sockaddr_in socket_address;
+   socket_address.sin_family = AF_INET;
+   inet_pton(AF_INET, host, &(socket_address.sin_addr));
+   return getnameinfo((struct sockaddr *)&socket_address, sizeof(socket_address), dest, size, NULL, 0, NI_NAMEREQD);
+}
