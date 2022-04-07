@@ -300,6 +300,7 @@ void start(t_traceroute_context *ctx) {
 		ft_memset(&last_ip, 0, sizeof(last_ip));
 		int all_failed = 1;
 		for (int i = 0; i < ctx->nqueries; ++i) {
+			ft_memset(buff, 0, NI_MAXHOST);
 			gettimeofday(&begin, NULL);
 			if (send_packet(ctx, send_buf, 60, ttl) && receive_packet(ctx, recv_buf, 60)) {
 				is_last = icmp->icmp_code == 0 && (icmp->icmp_type == ICMP_ECHOREPLY || icmp->icmp_type == ICMP_ECHO);
@@ -310,8 +311,11 @@ void start(t_traceroute_context *ctx) {
 					if (ctx->flags & FLAG_NUM) {
 						printf(" %s  %.3fms", inet_ntoa(ip->ip_src), get_duration(begin, end));
 					} else {
-						dns_resolve(inet_ntoa(ip->ip_src), buff, NI_MAXHOST);
-						printf(" %s (%s)  %.3fms", buff, inet_ntoa(ip->ip_src), get_duration(begin, end));
+						if (dns_resolve(inet_ntoa(ip->ip_src), buff, NI_MAXHOST)) {
+							printf(" %s (%s)  %.3fms", inet_ntoa(ip->ip_src), inet_ntoa(ip->ip_src), get_duration(begin, end));
+						} else {
+							printf(" %s (%s)  %.3fms", buff, inet_ntoa(ip->ip_src), get_duration(begin, end));
+						}
 					}
 				}
 				fflush(stdout);
