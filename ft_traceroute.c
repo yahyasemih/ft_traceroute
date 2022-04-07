@@ -339,6 +339,7 @@ void start(t_traceroute_context *ctx) {
 				}
 				last_ip = ip->ip_src;
 			} else {
+				all_failed = 0;
 				printf(" *");
 				fflush(stdout);
 			}
