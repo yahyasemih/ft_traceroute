@@ -312,10 +312,11 @@ void start(t_traceroute_context *ctx) {
 						printf(" %s  %.3fms", inet_ntoa(ip->ip_src), get_duration(begin, end));
 					} else {
 						if (dns_resolve(inet_ntoa(ip->ip_src), buff, NI_MAXHOST)) {
-							printf(" %s (%s)  %.3fms", inet_ntoa(ip->ip_src), inet_ntoa(ip->ip_src), get_duration(begin, end));
+							printf(" %s", inet_ntoa(ip->ip_src));
 						} else {
-							printf(" %s (%s)  %.3fms", buff, inet_ntoa(ip->ip_src), get_duration(begin, end));
+							printf(" %s", buff);
 						}
+						printf(" (%s)  %.3fms", inet_ntoa(ip->ip_src), get_duration(begin, end));
 					}
 				}
 				fflush(stdout);
