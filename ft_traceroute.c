@@ -84,6 +84,24 @@ int host_to_ip(const char *host, char *dest) {
 	return 0;
 }
 
+const char *get_option_name(char c) {
+	if (c == 's') {
+		return "src_addr";
+	} else if (c == 'f') {
+		return "first_ttl";
+	} else if (c == 'm') {
+		return "max_ttl";
+	} else if (c == 'w') {
+		return "wait_time";
+	} else if (c == 'q') {
+		return "nqueries";
+	} else if (c == 'z') {
+		return "sendwait";
+	} else {
+		return "invalid";
+	}
+}
+
 int process_options(char c, t_traceroute_context *ctx, char *argv[], int *x, int *y) {
 	int i = *x;
 	int j = *y;
@@ -95,7 +113,7 @@ int process_options(char c, t_traceroute_context *ctx, char *argv[], int *x, int
 		str = argv[i] + j + 1;
 	} else {
 		if (argv[i + 1] == NULL) {
-			fprintf(stderr, "Option `-%c' (argc %d) requires an argument: `-%c %s'\n", c, i, c, "TODO");
+			fprintf(stderr, "Option `-%c' (argc %d) requires an argument: `-%c %s'\n", c, i, c, get_option_name(c));
 			close(ctx->socket_fd);
 			exit(2);
 		}
