@@ -1,6 +1,6 @@
 #include "ft_traceroute.h"
 
-int init_socket(t_traceroute_context *ctx) {
+static int init_socket(t_traceroute_context *ctx) {
 	int fd;
 	int options = 1;
 	int type = SOCK_RAW;
@@ -27,7 +27,7 @@ int init_socket(t_traceroute_context *ctx) {
 	return fd;
 }
 
-void init_context(t_traceroute_context *ctx) {
+static void init_context(t_traceroute_context *ctx) {
 	ctx->first_ttl = 1;
 	ctx->max_ttl = 30;
 	ctx->nqueries = 3;
@@ -39,7 +39,7 @@ void init_context(t_traceroute_context *ctx) {
 	ctx->host = NULL;
 }
 
-void print_options() {
+static void print_options() {
 	fprintf(stderr, "Options:\n");
 	fprintf(stderr, "  -d\t\t\tEnable socket level debugging\n");
 	fprintf(stderr, "  -f first_ttl\t\tStart from the first_ttl hop (instead from 1)\n");
@@ -61,13 +61,13 @@ void print_options() {
 	// 				"\t\t\tallowed value\n");
 }
 
-void print_usage(const char *executable) {
+static void print_usage(const char *executable) {
 	fprintf(stderr, "Usage\n  sudo %s [options] host\n", executable);
 	print_options();
 	exit(0);
 }
 
-int host_to_ip(const char *host, char *dest) {
+static int host_to_ip(const char *host, char *dest) {
 	struct addrinfo *addr;
 	struct addrinfo hints;
 
@@ -84,7 +84,7 @@ int host_to_ip(const char *host, char *dest) {
 	return 0;
 }
 
-const char *get_option_name(char c) {
+static const char *get_option_name(char c) {
 	if (c == 's') {
 		return "src_addr";
 	} else if (c == 'f') {
@@ -102,7 +102,7 @@ const char *get_option_name(char c) {
 	}
 }
 
-int process_options(char c, t_traceroute_context *ctx, char *argv[], int *x, int *y) {
+static int process_options(char c, t_traceroute_context *ctx, char *argv[], int *x, int *y) {
 	int i = *x;
 	int j = *y;
 	long value = 0;
@@ -179,7 +179,7 @@ int process_options(char c, t_traceroute_context *ctx, char *argv[], int *x, int
 	return 1;
 }
 
-void process_arguments(int argc, char *argv[], t_traceroute_context *ctx) {
+static void process_arguments(int argc, char *argv[], t_traceroute_context *ctx) {
 	int end_of_flags = 0;
 	int failed = 0;
 	int host_idx = 0;
@@ -226,7 +226,7 @@ void process_arguments(int argc, char *argv[], t_traceroute_context *ctx) {
 	}
 }
 
-int send_packet(t_traceroute_context *ctx, char *send_buf, int size, int ttl) {
+static int send_packet(t_traceroute_context *ctx, char *send_buf, int size, int ttl) {
 	int sent;
 	struct addrinfo hints;
 	struct addrinfo *addr;
@@ -270,7 +270,7 @@ int send_packet(t_traceroute_context *ctx, char *send_buf, int size, int ttl) {
 	return sent >= 0;
 }
 
-int receive_packet(t_traceroute_context *ctx, char *recv_buf, int size) {
+static int receive_packet(t_traceroute_context *ctx, char *recv_buf, int size) {
 	int received;
 	socklen_t dst_addr_len;
 	struct addrinfo hints;
@@ -294,7 +294,7 @@ int receive_packet(t_traceroute_context *ctx, char *recv_buf, int size) {
 	return received >= 0;
 }
 
-double get_duration(struct timeval begin, struct timeval end) {
+static double get_duration(struct timeval begin, struct timeval end) {
 	double res = 0.0;
 	res += end.tv_sec * 1000.0;
 	res += end.tv_usec / 1000.0;
@@ -326,17 +326,17 @@ void start(t_traceroute_context *ctx) {
 				is_last = icmp->icmp_code == 0 && (icmp->icmp_type == ICMP_ECHOREPLY || icmp->icmp_type == ICMP_ECHO);
 				gettimeofday(&end, NULL);
 				if (last_ip.s_addr == ip->ip_src.s_addr && i > 0) {
-					printf("  %.3fms", get_duration(begin, end));
+					printf("  %.3f ms", get_duration(begin, end));
 				} else {
 					if (ctx->flags & FLAG_NUM) {
-						printf(" %s  %.3fms", inet_ntoa(ip->ip_src), get_duration(begin, end));
+						printf(" %s  %.3f ms", inet_ntoa(ip->ip_src), get_duration(begin, end));
 					} else {
 						if (dns_resolve(inet_ntoa(ip->ip_src), buff, NI_MAXHOST)) {
 							printf(" %s", inet_ntoa(ip->ip_src));
 						} else {
 							printf(" %s", buff);
 						}
-						printf(" (%s)  %.3fms", inet_ntoa(ip->ip_src), get_duration(begin, end));
+						printf(" (%s)  %.3f ms", inet_ntoa(ip->ip_src), get_duration(begin, end));
 					}
 				}
 				fflush(stdout);

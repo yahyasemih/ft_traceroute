@@ -34,6 +34,4 @@ typedef struct s_traceroute_context {
 	char ip[INET_ADDRSTRLEN];
 } t_traceroute_context;
 
-void init_context(t_traceroute_context *ctx);
-
 #endif
