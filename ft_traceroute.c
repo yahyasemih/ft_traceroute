@@ -128,6 +128,8 @@ int process_options(char c, t_traceroute_context *ctx, char *argv[], int *x, int
 			exit(2);
 		}
 		ft_strcpy(ctx->src, ip);
+		*x = i;
+		*y = j;
 		return 1;
 	}
 	value = ft_strtol(str, &end);
